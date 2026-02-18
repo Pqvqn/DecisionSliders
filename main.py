@@ -23,15 +23,7 @@ class DecisionWindow(QMainWindow):
         for i in range(5):
             mslider = MultiSlider(5, 50, 300)
             slider_row.addWidget(mslider)
-            self.all_sliders.append(mslider)
-        
-
-    def eventFilter(self, source, event):
-        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
-            for slider in self.all_sliders:
-                slider.mouseAt(event.pos())
-            
-        return QMainWindow.eventFilter(self, source, event)
+            self.all_sliders.append(mslider)      
 
 
 class MultiSlider(QWidget):
@@ -45,14 +37,17 @@ class MultiSlider(QWidget):
         self.setFixedHeight(h)
 
         for handle in self.handles:
+            handle.setMouseTracking(True)
+            handle.installEventFilter(self)
             handle.setGeometry(QRect(int(w / 2), 0, w, h))
             handle.setMinimum(-50)
             handle.setMaximum(50)
 
     def currPos(self, handle):
-        span = handle.style().pixelMetric(QStyle.PixelMetric.PM_SliderLength, QStyleOptionSlider(), handle)
-        y = handle.height() - QStyle.sliderPositionFromValue(handle.minimum(), handle.maximum(), handle.value(), handle.height() - span) - span
-        return self.mapToGlobal(QPoint(int(handle.x() + handle.width() / 2), int(handle.y() + y)))
+        metric = QStyle.PixelMetric.PM_SliderLength
+        span = handle.style().pixelMetric(metric, QStyleOptionSlider(), handle)
+        y = handle.height() - QStyle.sliderPositionFromValue(handle.minimum(), handle.maximum(), handle.value(), handle.height() - span) - span / 2
+        return self.mapToGlobal(QPoint(int(handle.width() / 2 + handle.x()), int(y + handle.y())))
 
     def mouseAt(self, pos):
         curr_poss = [(pos - self.currPos(hnd)).manhattanLength() for hnd in self.handles]
@@ -61,13 +56,17 @@ class MultiSlider(QWidget):
             for i, hnd in enumerate(self.handles):
                 if i != closest:
                     hnd.stackUnder(self.handles[closest])
-        
+     
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
+            self.mouseAt(source.mapToGlobal(event.pos()))
+        return QWidget.eventFilter(self, source, event)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = DecisionWindow()
     window.show()
-    app.installEventFilter(window)
 
     sys.exit(app.exec())
