@@ -1,7 +1,7 @@
 import sys
 
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSlider, QWidget, QStyle
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSlider, QWidget, QStyle, QHBoxLayout, QStyleOptionSlider
 from PyQt6.QtCore import QRect, QEvent, QPoint, Qt
 
 class DecisionWindow(QMainWindow):
@@ -11,15 +11,25 @@ class DecisionWindow(QMainWindow):
         self.setWindowTitle("Decision Axes")
 
 
-        self.sliders = MultiSlider(5, 50, 300)
-        
-        self.setCentralWidget(self.sliders)
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QHBoxLayout()
+        central.setLayout(layout)
 
+        slider_row = QHBoxLayout()
+        layout.addLayout(slider_row)
+
+        self.all_sliders = []
+        for i in range(5):
+            mslider = MultiSlider(5, 50, 300)
+            slider_row.addWidget(mslider)
+            self.all_sliders.append(mslider)
+        
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.Type.MouseMove:
-            if self.sliders.underMouse() and event.buttons() == Qt.MouseButton.NoButton:
-                self.sliders.mouseAt(event.pos())
+        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
+            for slider in self.all_sliders:
+                slider.mouseAt(event.pos())
             
         return QMainWindow.eventFilter(self, source, event)
 
@@ -31,12 +41,18 @@ class MultiSlider(QWidget):
         self.handles = [QSlider(self) for i in range(num)]
         self.MOUSE_PROX = 20
 
+        self.setFixedWidth(w * 2)
+        self.setFixedHeight(h)
+
         for handle in self.handles:
-            handle.setGeometry(QRect(0, 0, w, h))
+            handle.setGeometry(QRect(int(w / 2), 0, w, h))
+            handle.setMinimum(-50)
+            handle.setMaximum(50)
 
     def currPos(self, handle):
-        y = handle.height() - QStyle.sliderPositionFromValue(handle.minimum(), handle.maximum(), handle.value(), handle.height())
-        return self.mapToGlobal(QPoint(int(handle.x() + handle.width() / 2), y))
+        span = handle.style().pixelMetric(QStyle.PixelMetric.PM_SliderLength, QStyleOptionSlider(), handle)
+        y = handle.height() - QStyle.sliderPositionFromValue(handle.minimum(), handle.maximum(), handle.value(), handle.height() - span) - span
+        return self.mapToGlobal(QPoint(int(handle.x() + handle.width() / 2), int(handle.y() + y)))
 
     def mouseAt(self, pos):
         curr_poss = [(pos - self.currPos(hnd)).manhattanLength() for hnd in self.handles]
