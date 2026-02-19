@@ -1,9 +1,10 @@
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout
-from PyQt6.QtCore import pyqtSignal, pyqtSlot
+from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize
 
 from sliders import MultiSlider
+from reorderable import ReorderTray
 
 class DecisionWindow(QMainWindow):
     def __init__(self):
@@ -15,6 +16,10 @@ class DecisionWindow(QMainWindow):
         self.setCentralWidget(central)
         layout = QHBoxLayout()
         central.setLayout(layout)
+
+        options = ReorderTray(2, 5, True, None, QSize(100, 50))
+        options.entryChanged.connect(self.optionsChanged)
+        layout.addWidget(options)
 
         slider_row = QHBoxLayout()
         layout.addLayout(slider_row)
@@ -33,7 +38,15 @@ class DecisionWindow(QMainWindow):
     def newForward(self, name):
         for slider in self.all_sliders:
             slider.bringForward(name)
-        
+
+    @pyqtSlot(str, str)
+    def optionsChanged(self, oldname, newname):
+        if oldname == "":
+            print("created", newname)
+        elif newname == "":
+            print("deleted", oldname)
+        else:
+            print(oldname, "->", newname)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
