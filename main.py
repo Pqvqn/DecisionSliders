@@ -1,7 +1,7 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout
-from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy
+from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize, Qt
 
 from sliders import MultiSlider
 from reorderable import ReorderTray
@@ -17,26 +17,25 @@ class DecisionWindow(QMainWindow):
         layout = QHBoxLayout()
         central.setLayout(layout)
 
-        options = ReorderTray(2, 5, True, None, QSize(100, 50))
-        options.entryChanged.connect(self.optionsChanged)
-        layout.addWidget(options)
+        self.options = ReorderTray(2, True, None)
+        self.options.entryChanged.connect(self.optionsChanged)
+        self.options.setFixedWidth(220)
+        self.options.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        layout.addWidget(self.options)
 
-        slider_row = QHBoxLayout()
-        layout.addLayout(slider_row)
+        self.criteria = ReorderTray(-1, False, self.blankSlider)
+        layout.addWidget(self.criteria)
 
-        options = ["hey", "wow", "omg", "aah", ":))"]
-
-        self.all_sliders = []
-        for i in range(5):
-            mslider = MultiSlider(100, 300)
-            mslider.addHandles(options)
-            mslider.changeForward.connect(self.newForward)
-            slider_row.addWidget(mslider)
-            self.all_sliders.append(mslider)
+    @pyqtSlot()
+    def blankSlider(self):
+        mslider = MultiSlider(100, 300)
+        mslider.addHandles([x[0] for x in self.options.getItems()])
+        mslider.changeForward.connect(self.newForward)
+        return mslider
 
     @pyqtSlot(str)
     def newForward(self, name):
-        for slider in self.all_sliders:
+        for crit, slider in self.criteria.getItems():
             slider.bringForward(name)
 
     @pyqtSlot(str, str)
