@@ -1,7 +1,7 @@
 import sys
 
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSlider, QWidget, QStyle, QHBoxLayout, QStyleOptionSlider
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSlider, QWidget, QStyle, QHBoxLayout, QStyleOptionSlider, QLabel
 from PyQt6.QtCore import QRect, QEvent, QPoint, Qt
 
 class DecisionWindow(QMainWindow):
@@ -19,48 +19,92 @@ class DecisionWindow(QMainWindow):
         slider_row = QHBoxLayout()
         layout.addLayout(slider_row)
 
+        options = ["hey", "wow", "omg", "aah", ":))"]
+
         self.all_sliders = []
         for i in range(5):
-            mslider = MultiSlider(5, 50, 300)
+            mslider = MultiSlider(100, 300)
+            mslider.addHandles(options)
             slider_row.addWidget(mslider)
-            self.all_sliders.append(mslider)      
+            self.all_sliders.append(mslider)
 
 
 class MultiSlider(QWidget):
-    def __init__(self, num: int, w: int, h: int):
+    def __init__(self, wid, hei):
         super().__init__()
 
-        self.handles = [QSlider(self) for i in range(num)]
+        self.wid = wid
+        self.hei = hei
+
+        self.handles = {}
         self.MOUSE_PROX = 20
 
-        self.setFixedWidth(w * 2)
-        self.setFixedHeight(h)
+        self.setFixedWidth(wid)
+        self.setFixedHeight(hei)
 
-        for handle in self.handles:
-            handle.setMouseTracking(True)
-            handle.installEventFilter(self)
-            handle.setGeometry(QRect(int(w / 2), 0, w, h))
-            handle.setMinimum(-50)
-            handle.setMaximum(50)
+    def addHandles(self, names):
+        for name in names:
+            self.addHandle(name)
 
-    def currPos(self, handle):
-        metric = QStyle.PixelMetric.PM_SliderLength
-        span = handle.style().pixelMetric(metric, QStyleOptionSlider(), handle)
-        y = handle.height() - QStyle.sliderPositionFromValue(handle.minimum(), handle.maximum(), handle.value(), handle.height() - span) - span / 2
-        return self.mapToGlobal(QPoint(int(handle.width() / 2 + handle.x()), int(y + handle.y())))
+    def addHandle(self, name):
+        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), (-50, 50))
+        handle.setParent(self)
+        handle.setMouseTracking(True)
+        handle.installEventFilter(self)
+
+        self.handles[name] = handle
+
+    def renameHandle(self, old_name, new_name):
+        self.handles[old_name].label.text = new_name
+        self.handles[new_name] = self.handles[old_name]
+        del self.handles[old_name]
+
+    def deleteHandle(self, name):
+        self.handles[name].deleteLater()
+        del self.handles[name]
 
     def mouseAt(self, pos):
-        curr_poss = [(pos - self.currPos(hnd)).manhattanLength() for hnd in self.handles]
-        closest = curr_poss.index(min(curr_poss))
+        curr_poss = {name: (pos - hnd.currentPosition()).manhattanLength() for name, hnd in reversed(self.handles.items())}
+        closest = min(curr_poss, key=curr_poss.get)
         if curr_poss[closest] <= self.MOUSE_PROX:
-            for i, hnd in enumerate(self.handles):
-                if i != closest:
-                    hnd.stackUnder(self.handles[closest])
+            for name in self.handles:
+                if name != closest:
+                    self.handles[name].stackUnder(self.handles[closest])
      
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
             self.mouseAt(source.mapToGlobal(event.pos()))
         return QWidget.eventFilter(self, source, event)
+
+
+class LabeledSlider(QSlider):
+    def __init__(self, text, geometry, range):
+        super().__init__()
+
+        self.setGeometry(geometry)
+        self.setMinimum(range[0])
+        self.setMaximum(range[1])
+        
+        metric = QStyle.PixelMetric.PM_SliderLength
+        self.span = self.style().pixelMetric(metric, QStyleOptionSlider(), self)
+
+        self.setTracking(True)
+
+        self.label = QLabel(text)
+        self.label.setStyleSheet("QLabel { background-color : silver; color : black; }")
+        self.label.setParent(self)
+        self.label.move(QPoint(60, self.valueToY(0) - 10))
+        
+        self.valueChanged.connect(self.changed)
+        
+    def changed(self, val):
+        self.label.move(QPoint(60, self.valueToY(val) - 10))
+
+    def currentPosition(self):
+        return self.mapToGlobal(QPoint(self.width() // 2, self.valueToY(self.value())))
+
+    def valueToY(self, val):
+        return int(self.height() - QStyle.sliderPositionFromValue(self.minimum(), self.maximum(), val, self.height() - self.span) - self.span / 2)        
 
 
 if __name__ == "__main__":
