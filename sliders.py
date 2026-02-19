@@ -26,6 +26,7 @@ class MultiSlider(QWidget):
         handle.setParent(self)
         handle.setMouseTracking(True)
         handle.installEventFilter(self)
+        handle.show()
 
         self.handles[name] = handle
 
@@ -35,6 +36,7 @@ class MultiSlider(QWidget):
         del self.handles[old_name]
 
     def deleteHandle(self, name):
+        self.handles[name].setParent(None)
         self.handles[name].deleteLater()
         del self.handles[name]
 
@@ -79,6 +81,7 @@ class LabeledSlider(QSlider):
 
     def setText(self, text):
         self.label.setText(" " + text + " ")
+        self.label.show()
 
     @pyqtSlot(int)
     def changed(self, val):

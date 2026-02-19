@@ -16,17 +16,22 @@ class ReorderTray(QFrame):
 
         self.grid = QGridLayout()
         self.setLayout(self.grid)
+        self.creator = QLineEdit()
+        self.creator.editingFinished.connect(self.createNew)
 
-        self.reorderables = [self.blankPanel()]
+        self.reorderables = []
         self.source = -1
 
         self.refillGrid()
 
     def blankPanel(self):
-        return Reorderable(-1, self.horizpanel, self.generator() if self.generator else None)
+        r = Reorderable(-1, self.horizpanel, self.generator() if self.generator else None)
+        r.selected.connect(self.buttonSelected)
+        r.nameChanged.connect(self.nameChanged)
+        return r
 
     def getItems(self):
-        return [(self.reorderables[i].entryName, self.reorderables[i].inside) for i in range(len(self.reorderables) - 1)]
+        return [(self.reorderables[i].entryName, self.reorderables[i].inside) for i in range(len(self.reorderables))]
 
     def insertAt(self, reorderable, idx):
         self.reorderables.insert(idx, reorderable)
@@ -38,27 +43,16 @@ class ReorderTray(QFrame):
         return r
 
     def refillGrid(self):
-        removed = set()
-        
-        while item := self.grid.takeAt(0):
-            r = item.widget()
-            if r is not None:
-                removed.add(r)
-                if r not in self.reorderables:
-                    r.selected.disconnect(self.buttonSelected)
-                    r.nameChanged.disconnect(self.nameChanged)
+        while self.grid.takeAt(0):
+            pass
 
         for i, r in enumerate(self.reorderables):
             coords = self.idxToCoords(i)
             self.grid.addWidget(r, coords[0], coords[1], alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             r.idx = i
-            if r not in removed:
-                r.selected.connect(self.buttonSelected)
-                r.nameChanged.connect(self.nameChanged)
-            if i < len(self.reorderables) - 1:
-                self.reorderables[i].controlButton.show()
-            else:
-                self.reorderables[i].controlButton.hide()
+
+        lastcoord = self.idxToCoords(len(self.reorderables))
+        self.grid.addWidget(self.creator, lastcoord[0], lastcoord[1])
 
         cols = self.grid.columnCount()
         for i in range(cols):
@@ -70,20 +64,29 @@ class ReorderTray(QFrame):
             self.grid.setRowStretch(i, 0)
         self.grid.setRowStretch(rows, 1)
         
+
+    @pyqtSlot()
+    def createNew(self):
+        if self.creator.text() == "":
+            return
+        
+        new_blank = self.blankPanel()
+        self.insertAt(new_blank, len(self.reorderables))
+        new_blank.setName(self.creator.text())
+        self.creator.setText("")
         
     @pyqtSlot(int, str, str)
     def nameChanged(self, idx, oldname, newname):
         samename = [item for i, item in enumerate(self.getItems()) if i != idx and item[0] == newname]
+
         if len(samename) > 0:
             self.reorderables[idx].setName(newname + "*")
             return
 
-        if idx == len(self.reorderables) - 1:
-            new_blank = self.blankPanel()
-            self.insertAt(new_blank, len(self.reorderables))
-            new_blank.nameEdit.setFocus()
-        elif newname == "":
-            r = self.removeAt(idx)
+        if newname == "":
+            r = self.removeAt(idx) 
+            r.selected.disconnect(self.buttonSelected)
+            r.nameChanged.disconnect(self.nameChanged)
             r.deleteLater()
             
         self.entryChanged.emit(oldname, newname)
@@ -121,8 +124,6 @@ class Reorderable(QWidget):
         layout = QHBoxLayout() if horiz else QVBoxLayout()
         self.setLayout(layout)
 
-        self.inside = inside
-
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         # self.setFixedHeight(50)
 
@@ -131,6 +132,7 @@ class Reorderable(QWidget):
         self.nameEdit.editingFinished.connect(self.editingFinished)
         layout.addWidget(self.nameEdit)
 
+        self.inside = inside
         if inside:
             layout.addWidget(inside)
 
@@ -154,8 +156,8 @@ class Reorderable(QWidget):
         newname = self.nameEdit.text()
         oldname = self.entryName
         if newname != oldname:
-            self.entryName = newname
             self.nameChanged.emit(self.idx, oldname, newname)
+            self.entryName = self.nameEdit.text()
 
     @pyqtSlot()
     def setState(self, isSource, fault):

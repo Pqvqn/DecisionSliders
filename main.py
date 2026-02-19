@@ -41,11 +41,14 @@ class DecisionWindow(QMainWindow):
     @pyqtSlot(str, str)
     def optionsChanged(self, oldname, newname):
         if oldname == "":
-            print("created", newname)
+            for crit, slider in self.criteria.getItems():
+                slider.addHandle(newname)
         elif newname == "":
-            print("deleted", oldname)
+            for crit, slider in self.criteria.getItems():
+                slider.deleteHandle(oldname)
         else:
-            print(oldname, "->", newname)
+            for crit, slider in self.criteria.getItems():
+                slider.renameHandle(oldname, newname)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
