@@ -120,7 +120,7 @@ class Reorderable(QWidget):
 
         self.idx = idx
         layout = QHBoxLayout() if horiz else QVBoxLayout()
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(3,0,3,0)
         self.setLayout(layout)
 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)

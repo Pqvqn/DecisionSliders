@@ -17,6 +17,7 @@ class MultiSlider(QGroupBox):
         self.setFixedWidth(wid)
         self.setFixedHeight(hei)
 
+
     def addHandles(self, names):
         for name in names:
             self.addHandle(name)
@@ -66,6 +67,8 @@ class LabeledSlider(QSlider):
         self.setMinimum(range[0])
         self.setMaximum(range[1])
         
+        # self.setStyleSheet("QSlider::groove:vertical { width: 3px; margin: 0 0; background-color: grey }")
+        
         metric = QStyle.PixelMetric.PM_SliderLength
         self.span = self.style().pixelMetric(metric, QStyleOptionSlider(), self)
 
@@ -75,7 +78,7 @@ class LabeledSlider(QSlider):
         self.label.setWordWrap(True)
         self.label.setMaximumWidth(self.width() // 2 - 13)
         self.setText(text)
-        self.label.setStyleSheet("QLabel { background-color : silver; color : black; }")
+        self.label.setStyleSheet("QLabel { background-color : gainsboro; color : black; }")
         self.label.setParent(self)
         self.label.move(QPoint(self.width() // 2 + 10, self.valueToY(0) - 10))
         
