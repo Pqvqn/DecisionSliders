@@ -29,7 +29,7 @@ class DecisionWindow(QMainWindow):
 
     @pyqtSlot()
     def blankSlider(self):
-        mslider = MultiSlider(100, 300)
+        mslider = MultiSlider(150, 500)
         mslider.addHandles([x[0] for x in self.options.getItems()])
         mslider.changeForward.connect(self.newForward)
         return mslider

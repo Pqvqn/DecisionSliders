@@ -120,6 +120,7 @@ class Reorderable(QWidget):
 
         self.idx = idx
         layout = QHBoxLayout() if horiz else QVBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
         self.setLayout(layout)
 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -132,7 +133,7 @@ class Reorderable(QWidget):
 
         self.inside = inside
         if inside:
-            layout.addWidget(inside)
+            layout.addWidget(inside, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.controlButton = QPushButton()
         self.controlButton.setFixedSize(20, 20)

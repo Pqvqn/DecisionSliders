@@ -1,9 +1,9 @@
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QSlider, QWidget, QStyle, QStyleOptionSlider, QLabel
+from PyQt6.QtWidgets import QSlider, QWidget, QStyle, QStyleOptionSlider, QLabel, QGroupBox
 from PyQt6.QtCore import QRect, QEvent, QPoint, Qt, pyqtSignal, pyqtSlot
 
 
-class MultiSlider(QWidget):
+class MultiSlider(QGroupBox):
     changeForward = pyqtSignal(str)
     
     def __init__(self, wid, hei):
@@ -72,10 +72,12 @@ class LabeledSlider(QSlider):
         self.setTracking(True)
 
         self.label = QLabel()
+        self.label.setWordWrap(True)
+        self.label.setMaximumWidth(self.width() // 2 - 13)
         self.setText(text)
         self.label.setStyleSheet("QLabel { background-color : silver; color : black; }")
         self.label.setParent(self)
-        self.label.move(QPoint(60, self.valueToY(0) - 10))
+        self.label.move(QPoint(self.width() // 2 + 10, self.valueToY(0) - 10))
         
         self.valueChanged.connect(self.changed)
 
@@ -85,7 +87,7 @@ class LabeledSlider(QSlider):
 
     @pyqtSlot(int)
     def changed(self, val):
-        self.label.move(QPoint(60, self.valueToY(val) - 10))
+        self.label.move(QPoint(self.width() // 2 + 10, self.valueToY(val) - 10))
 
     def currentPosition(self):
         return self.mapToGlobal(QPoint(self.width() // 2, self.valueToY(self.value())))
