@@ -1,18 +1,16 @@
-from PyQt6.QtWidgets import QGridLayout, QVBoxLayout, QHBoxLayout, QFrame, QWidget, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QLayout
+from PyQt6.QtWidgets import QGridLayout, QVBoxLayout, QHBoxLayout, QGroupBox, QWidget, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QLayout
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt
 
-class ReorderTray(QFrame):
+class ReorderTray(QGroupBox):
 
     entryChanged = pyqtSignal(str, str)
 
-    def __init__(self, maxcols, horizpanel, generator):
-        super().__init__()
+    def __init__(self, maxcols, horizpanel, generator, title):
+        super().__init__(title)
 
         self.maxcols = maxcols
         self.horizpanel = horizpanel
         self.generator = generator
-
-        self.setFrameShape(QFrame.Shape.Box)
 
         self.grid = QGridLayout()
         self.setLayout(self.grid)

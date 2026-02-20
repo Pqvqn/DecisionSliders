@@ -17,13 +17,14 @@ class DecisionWindow(QMainWindow):
         layout = QHBoxLayout()
         central.setLayout(layout)
 
-        self.options = ReorderTray(2, True, None)
+        self.options = ReorderTray(2, True, None, "options")
         self.options.entryChanged.connect(self.optionsChanged)
         self.options.setFixedWidth(220)
         self.options.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.options)
 
-        self.criteria = ReorderTray(-1, False, self.blankSlider)
+        self.criteria = ReorderTray(-1, False, self.blankSlider, "criteria")
+        self.criteria.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         layout.addWidget(self.criteria)
 
     @pyqtSlot()
