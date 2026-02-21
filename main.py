@@ -2,6 +2,7 @@ import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton, QDialog
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize, Qt
+from PyQt6.QtGui import QPalette, QColor
 
 from sliders import MultiSlider
 from reorderable import ReorderTray
@@ -59,6 +60,9 @@ class DecisionWindow(QMainWindow):
 
 
 class Criterion(QWidget):
+
+    update = pyqtSignal(dict)
+    
     def __init__(self, mslider, critGetter):
         super().__init__()
 
@@ -75,24 +79,23 @@ class Criterion(QWidget):
         self.configButton.pressed.connect(self.openConfig)
         
     def openConfig(self):
+        self.mslider.setReadOnly(True)
         self.configPopup.exec()
 
 class CriterionConfig(QDialog):
-    def __init__(self, critGetter):
+    def __init__(self, criterion):
         super().__init__()
 
-        self.critGetter = critGetter
-        self.inputCrits = set()
-        self.visited = False
-        
-
-    def refillOptions(self):
-        all_crit = self.critGetter()
+        self.criterion = criterion
 
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    palette = QApplication.palette()
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(255, 175, 175))
+    QApplication.setPalette(palette)
 
     window = DecisionWindow()
     window.show()

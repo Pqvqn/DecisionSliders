@@ -6,6 +6,7 @@ from PyQt6.QtCore import QRect, QEvent, QPoint, Qt, pyqtSignal, pyqtSlot
 class MultiSlider(QGroupBox):
     changeForward = pyqtSignal(str)
     
+    
     def __init__(self, wid, hei):
         super().__init__()
         self.wid = wid
@@ -17,6 +18,13 @@ class MultiSlider(QGroupBox):
         self.setFixedWidth(wid)
         self.setFixedHeight(hei)
 
+        self.readOnly = False
+
+
+    def setReadOnly(self, ro):
+        self.readOnly = ro
+        for h in self.handles:
+            self.handles[h].setEnabled(not ro)
 
     def addHandles(self, names):
         for name in names:
@@ -27,8 +35,10 @@ class MultiSlider(QGroupBox):
         handle.setParent(self)
         handle.setMouseTracking(True)
         handle.installEventFilter(self)
+        handle.setEnabled(not self.readOnly)
         handle.show()
-
+        handle.lower()
+        
         self.handles[name] = handle
 
     def renameHandle(self, old_name, new_name):
@@ -42,20 +52,20 @@ class MultiSlider(QGroupBox):
         del self.handles[name]
 
     def mouseAt(self, pos):
-        curr_poss = {name: (pos - hnd.currentPosition()).manhattanLength() for name, hnd in reversed(self.handles.items())}
+        curr_poss = {hnd.name: (pos - hnd.currentPosition()).manhattanLength() for hnd in reversed(self.children())}
         closest = min(curr_poss, key=curr_poss.get)
         if curr_poss[closest] <= self.MOUSE_PROX:
             # brindForward(closest)
             self.changeForward.emit(closest)
 
     def bringForward(self, name):
-        for o_name in self.handles:
-            if o_name != name:
-                self.handles[o_name].stackUnder(self.handles[name])
+        self.handles[name].raise_()
         
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
             self.mouseAt(source.mapToGlobal(event.pos()))
+        elif event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.RightButton:
+            self.children()[-1].lower()
         return QWidget.eventFilter(self, source, event)
 
 
@@ -74,6 +84,7 @@ class LabeledSlider(QSlider):
 
         self.setTracking(True)
 
+        self.name = ""
         self.label = QLabel()
         self.label.setWordWrap(True)
         self.label.setMaximumWidth(self.width() // 2 - 13)
@@ -85,6 +96,7 @@ class LabeledSlider(QSlider):
         self.valueChanged.connect(self.changed)
 
     def setText(self, text):
+        self.name = text
         self.label.setText(" " + text + " ")
         self.label.show()
 
