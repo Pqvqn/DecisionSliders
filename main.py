@@ -38,7 +38,7 @@ class DecisionWindow(QMainWindow):
         mslider.addHandles([x[0] for x in self.options.getItems()])
         mslider.changeForward.connect(self.newForward)
 
-        criterion = Criterion(mslider, self.multisliders)
+        criterion = Criterion(mslider, self.criteria.getItems)
         return criterion
 
     @pyqtSlot(str)
@@ -72,14 +72,17 @@ class Criterion(QWidget):
         self.mslider = mslider
         layout.addWidget(self.mslider)
 
+        self.critGetter = critGetter
+
         self.configButton = QPushButton("◊◊◊")
         layout.addWidget(self.configButton)
-        self.configPopup = CriterionConfig(critGetter)
+        self.configPopup = CriterionConfig(self)
 
         self.configButton.pressed.connect(self.openConfig)
         
     def openConfig(self):
         self.mslider.setReadOnly(True)
+        self.configPopup.refresh()
         self.configPopup.exec()
 
 class CriterionConfig(QDialog):
@@ -88,14 +91,21 @@ class CriterionConfig(QDialog):
 
         self.criterion = criterion
 
+    def refresh(self):
+        crits = self.criterion.critGetter()
+        for c in crits:
+            if c[1] == self.criterion:
+                name = c[0]
+                self.setWindowTitle(f"◊ {name} ◊")
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     palette = QApplication.palette()
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(255, 170, 170))
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(255, 210, 210))
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(255, 190, 190))
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(190, 190, 255))
     
     QApplication.setPalette(palette)
 
