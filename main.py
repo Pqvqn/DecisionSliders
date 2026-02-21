@@ -11,7 +11,7 @@ class DecisionWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Decision Axes")
+        self.setWindowTitle("◌ 	◍ 	◎")
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -72,7 +72,7 @@ class Criterion(QWidget):
         self.mslider = mslider
         layout.addWidget(self.mslider)
 
-        self.configButton = QPushButton("◊◇◊")
+        self.configButton = QPushButton("◊◊◊")
         layout.addWidget(self.configButton)
         self.configPopup = CriterionConfig(critGetter)
 
@@ -94,7 +94,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     palette = QApplication.palette()
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(255, 175, 175))
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(255, 170, 170))
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(255, 210, 210))
+    
     QApplication.setPalette(palette)
 
     window = DecisionWindow()
