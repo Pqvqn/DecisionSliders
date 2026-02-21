@@ -88,7 +88,9 @@ class MultiSlider(QWidget):
             best_idx = ans.index(best)
 
             if best <= self.MOUSE_PROX // 2:
-                h.setSide(not handlesort[i + best_idx * 2 - 1][2])                            
+                h.setSide(not handlesort[i + best_idx * 2 - 1][2])
+            else:
+                h.setSide(False)                 
             
         
     def eventFilter(self, source, event):
