@@ -5,6 +5,7 @@ from PyQt6.QtCore import QRect, QEvent, QPoint, Qt, pyqtSignal, pyqtSlot
 
 class MultiSlider(QWidget):
     changeForward = pyqtSignal(str)
+    updateValues = pyqtSignal(dict)
     
     
     def __init__(self, wid, hei):
@@ -90,9 +91,17 @@ class MultiSlider(QWidget):
             if best <= self.MOUSE_PROX // 2:
                 h.setSide(not handlesort[i + best_idx * 2 - 1][2])
             else:
-                h.setSide(False)                 
+                h.setSide(False)
+        self.updateValues.emit(update)            
             
-        
+    def getValues(self):
+        return {n: h.value() for (n, h) in self.handles.items()}
+
+    def setValues(self, update):
+        for h in update:
+            self.handles[h].setValue(update[h])
+            
+    
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
             self.mouseAt(source.mapToGlobal(event.pos()))

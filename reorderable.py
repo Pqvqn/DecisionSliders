@@ -4,6 +4,7 @@ from PyQt6.QtCore import pyqtSignal, pyqtSlot, Qt
 class ReorderTray(QGroupBox):
 
     entryChanged = pyqtSignal(str, str)
+    insideDeleted = pyqtSignal(QWidget)
 
     def __init__(self, maxcols, horizpanel, generator, title):
         super().__init__(title)
@@ -23,14 +24,17 @@ class ReorderTray(QGroupBox):
         self.refillGrid()
 
     def blankPanel(self):
-        r = Reorderable(-1, self.horizpanel, self.generator() if self.generator else None)
+        r = Reorderable(-1, self.horizpanel, self.generator)
         r.selected.connect(self.buttonSelected)
         r.nameChanged.connect(self.nameChanged)
         return r
+    
+    def getNames(self):
+        return [self.reorderables[i].entryName for i in range(len(self.reorderables))]  
 
     def getItems(self):
-        return [(self.reorderables[i].entryName, self.reorderables[i].inside) for i in range(len(self.reorderables))]
-
+        return [self.reorderables[i].inside for i in range(len(self.reorderables))]
+        
     def insertAt(self, reorderable, idx):
         self.reorderables.insert(idx, reorderable)
         self.refillGrid()
@@ -75,7 +79,7 @@ class ReorderTray(QGroupBox):
         
     @pyqtSlot(int, str, str)
     def nameChanged(self, idx, oldname, newname):
-        samename = [item for i, item in enumerate(self.getItems()) if i != idx and item[0] == newname]
+        samename = [name for i, name in enumerate(self.getNames()) if i != idx and name == newname]
 
         if len(samename) > 0:
             self.reorderables[idx].setName(newname + "*")
@@ -85,6 +89,8 @@ class ReorderTray(QGroupBox):
             r = self.removeAt(idx) 
             r.selected.disconnect(self.buttonSelected)
             r.nameChanged.disconnect(self.nameChanged)
+            if r.inside:
+                self.insideDeleted.emit(r.inside)
             r.deleteLater()
             
         self.entryChanged.emit(oldname, newname)
@@ -115,7 +121,7 @@ class Reorderable(QWidget):
     selected = pyqtSignal(int)
     nameChanged = pyqtSignal(int, str, str)
 
-    def __init__(self, idx, horiz, inside):
+    def __init__(self, idx, horiz, generator):
         super().__init__()
 
         self.idx = idx
@@ -131,9 +137,9 @@ class Reorderable(QWidget):
         self.nameEdit.editingFinished.connect(self.editingFinished)
         layout.addWidget(self.nameEdit)
 
-        self.inside = inside
-        if inside:
-            layout.addWidget(inside, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.inside = generator(self) if generator else None
+        if self.inside:
+            layout.addWidget(self.inside, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.controlButton = QPushButton()
         self.controlButton.setFixedSize(20, 20)
