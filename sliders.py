@@ -14,8 +14,9 @@ class MultiSlider(QWidget):
         self.wid = wid
         self.hei = hei
         self.step = 50
-        self.curr_min = -self.step
-        self.curr_max = self.step
+        self.overstep = 5
+        self.curr_min = -1
+        self.curr_max = 1
 
         self.handles = {}
         self.MOUSE_PROX = 20
@@ -37,14 +38,20 @@ class MultiSlider(QWidget):
         self.check_expansion()
 
         if not self.expandable:
-            self.update_range(-self.step, self.step)
+            self.update_range(-1, 1)
+
+    def calc_range(self):
+        hrange = (self.curr_min * self.step - self.overstep if self.expandable else 0,
+                 self.curr_max * self.step + self.overstep if self.expandable else 0,
+                 self.step)
+        return hrange
     
     def addHandles(self, names):
         for name in names:
             self.addHandle(name)
 
     def addHandle(self, name):
-        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), (self.curr_min, self.curr_max, self.step))
+        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), self.calc_range())
         handle.setParent(self)
         handle.setMouseTracking(True)
         handle.installEventFilter(self)
@@ -132,15 +139,17 @@ class MultiSlider(QWidget):
         old_min = self.curr_min
         old_max = self.curr_max
 
-        if lowest <= self.curr_min:
-            new_min -= self.step
-        elif lowest > self.curr_min + self.step:
-            new_min += self.step
+        hrange = self.calc_range()
 
-        if highest >= self.curr_max:
-            new_max += self.step
-        elif highest < self.curr_max - self.step:
-            new_max -= self.step
+        if lowest <= hrange[0]:
+            new_min -= 1
+        elif lowest >= (self.curr_min + 1) * self.step + self.overstep:
+            new_min += 1
+
+        if highest >= hrange[1]:
+            new_max += 1
+        elif highest <= (self.curr_max - 1) * self.step - self.overstep:
+            new_max -= 1
 
         self.update_range(new_min, new_max)
 
@@ -156,10 +165,12 @@ class MultiSlider(QWidget):
     def update_range(self, new_min, new_max):
         self.curr_min = new_min
         self.curr_max = new_max
+
+        hrange = self.calc_range()
         
         for h in self.handles.values():
-            h.setMinimum(self.curr_min)
-            h.setMaximum(self.curr_max)
+            h.setMinimum(hrange[0])
+            h.setMaximum(hrange[1])
             h.moveText(h.value())
     
     def eventFilter(self, source, event):
