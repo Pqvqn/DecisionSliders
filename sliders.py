@@ -1,6 +1,7 @@
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import QSlider, QWidget, QStyle, QStyleOptionSlider, QLabel, QGroupBox
 from PyQt6.QtCore import QRect, QEvent, QPoint, Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QCursor
 
 
 class MultiSlider(QWidget):
@@ -12,6 +13,9 @@ class MultiSlider(QWidget):
         super().__init__()
         self.wid = wid
         self.hei = hei
+        self.step = 50
+        self.curr_min = -self.step
+        self.curr_max = self.step
 
         self.handles = {}
         self.MOUSE_PROX = 20
@@ -20,6 +24,7 @@ class MultiSlider(QWidget):
         self.setFixedHeight(hei)
 
         self.readOnly = False
+        self.expandable = False
 
 
     def setReadOnly(self, ro):
@@ -27,12 +32,19 @@ class MultiSlider(QWidget):
         for h in self.handles:
             self.handles[h].setEnabled(not ro)
 
+    def setExpandable(self, exp):
+        self.expandable = exp
+        self.check_expansion()
+
+        if not self.expandable:
+            self.update_range(-self.step, self.step)
+    
     def addHandles(self, names):
         for name in names:
             self.addHandle(name)
 
     def addHandle(self, name):
-        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), (-50, 50, 50))
+        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), (self.curr_min, self.curr_max, self.step))
         handle.setParent(self)
         handle.setMouseTracking(True)
         handle.installEventFilter(self)
@@ -60,7 +72,6 @@ class MultiSlider(QWidget):
                 hnd.raise_()
         closest = min(curr_poss, key=curr_poss.get)
         if curr_poss[closest] <= self.MOUSE_PROX:
-            # brindForward(closest)
             self.changeForward.emit(closest)
 
     def bringForward(self, name):
@@ -69,19 +80,19 @@ class MultiSlider(QWidget):
     @pyqtSlot(dict)
     def valuesChanged(self, update):
         handlesort = sorted(self.handles.items(), key=lambda x: x[1].value())
-        handlesort = [(n, h, h.leftSide, h.currentPosition().y()) for (n, h) in handlesort]
-        for i, (n, h, f, y) in enumerate(handlesort):
+        handlesortex = [(n, h, h.leftSide, h.currentPosition().y()) for (n, h) in handlesort]
+        for i, (n, h, f, y) in enumerate(handlesortex):
             if n not in update:
                 continue
             
             prev = self.MOUSE_PROX
             if i > 0:
-                diff = handlesort[i - 1][3] - y
+                diff = handlesortex[i - 1][3] - y
                 prev = diff
 
             post = self.MOUSE_PROX
-            if i < len(handlesort) - 1:
-                diff = y - handlesort[i + 1][3]
+            if i < len(handlesortex) - 1:
+                diff = y - handlesortex[i + 1][3]
                 post = diff
 
             ans = (prev, post)
@@ -89,9 +100,12 @@ class MultiSlider(QWidget):
             best_idx = ans.index(best)
 
             if best <= self.MOUSE_PROX // 2:
-                h.setSide(not handlesort[i + best_idx * 2 - 1][2])
+                h.setSide(not handlesortex[i + best_idx * 2 - 1][2])
             else:
                 h.setSide(False)
+                
+        self.check_expansion(handlesort)
+
         self.updateValues.emit(update)            
             
     def getValues(self):
@@ -101,6 +115,52 @@ class MultiSlider(QWidget):
         for h in update:
             self.handles[h].setValue(update[h])
             
+    def check_expansion(self, handles_sorted=None):
+        if not self.expandable:
+            return
+
+        if not handles_sorted:
+            handles_sorted = sorted(self.handles.items(), key=lambda x: x[1].value())
+
+        if len(handles_sorted) == 0:
+            return
+        
+        lowest = handles_sorted[0][1].value()
+        highest = handles_sorted[-1][1].value()
+        new_min = self.curr_min
+        new_max = self.curr_max
+        old_min = self.curr_min
+        old_max = self.curr_max
+
+        if lowest <= self.curr_min:
+            new_min -= self.step
+        elif lowest > self.curr_min + self.step:
+            new_min += self.step
+
+        if highest >= self.curr_max:
+            new_max += self.step
+        elif highest < self.curr_max - self.step:
+            new_max -= self.step
+
+        self.update_range(new_min, new_max)
+
+        if new_min != old_min:
+            handles_sorted[0][1].setSliderDown(False)
+            cursor = QCursor()
+            cursor.setPos(cursor.pos().x(), handles_sorted[0][1].currentPosition().y())
+        if new_max != old_max:
+            handles_sorted[-1][1].setSliderDown(False)
+            cursor = QCursor()
+            cursor.setPos(cursor.pos().x(), handles_sorted[-1][1].currentPosition().y())
+
+    def update_range(self, new_min, new_max):
+        self.curr_min = new_min
+        self.curr_max = new_max
+        
+        for h in self.handles.values():
+            h.setMinimum(self.curr_min)
+            h.setMaximum(self.curr_max)
+            h.moveText(h.value())
     
     def eventFilter(self, source, event):
         if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.NoButton:
@@ -120,8 +180,7 @@ class LabeledSlider(QSlider):
         self.setTickInterval(range[2])
         self.setTickPosition(QSlider.TickPosition.TicksBothSides)
 
-        self.leftSide = True
-        
+        self.leftSide = True        
         # self.setStyleSheet("QSlider::groove:vertical { width: 3px; margin: 0 0; background-color: grey }")
         
         metric = QStyle.PixelMetric.PM_SliderLength

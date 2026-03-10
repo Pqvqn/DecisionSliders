@@ -147,9 +147,15 @@ class CriterionConfig(QDialog):
         self.influenceChecks = QVBoxLayout()
         sublayout.addLayout(self.influenceChecks)
 
-        self.viewSlider = MultiSlider(150, 250)
-        self.viewSlider.setReadOnly(True)
-        sublayout.addWidget(self.viewSlider)
+        self.previewSlider = MultiSlider(150, 250)
+        self.previewSlider.setReadOnly(True)
+        sublayout.addWidget(self.previewSlider)
+
+        self.rangeSlider = MultiSlider(150, 250)
+        self.rangeSlider.setExpandable(True)
+        self.rangeSlider.addHandles(["min", "max"])
+        self.rangeSlider.setValues({"min": -25, "max": 25})
+        sublayout.addWidget(self.rangeSlider)
 
         self.confirmButton = QPushButton("🞠🞠🞠")
         self.confirmButton.pressed.connect(self.confirmChanges)
@@ -188,7 +194,6 @@ class CriterionConfig(QDialog):
             ret = ret.union(self.findDownstream(r))
         return ret
 
-            
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
