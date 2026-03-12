@@ -38,7 +38,7 @@ class MultiSlider(QWidget):
         self.expandable = exp
 
         if not self.expandable:
-            self.update_range(-1, 1)
+            self.updateRange(-1, 1)
             if self.zero_mark:
                 self.zero_mark.setParent(None)
                 self.zero_mark.deleteLater()
@@ -47,12 +47,12 @@ class MultiSlider(QWidget):
             self.zero_mark = QLabel("-")
             self.zero_mark.setParent(self)
 
-        self.check_expansion()
+        self.checkExpansion()
 
         if self.expandable and len(self.handles) > 0:
-            self.move_zero_mark()
+            self.moveZeroMark()
 
-    def calc_range(self):
+    def calcRange(self):
         hrange = (self.curr_min * self.step - (self.overstep if self.expandable else 0),
                  self.curr_max * self.step + (self.overstep if self.expandable else 0),
                  self.step)
@@ -65,7 +65,7 @@ class MultiSlider(QWidget):
     def addHandle(self, name):        
         init_size = len(self.handles)
         
-        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), self.calc_range())
+        handle = LabeledSlider(name, QRect(0, 0, self.wid, self.hei), self.calcRange())
         handle.setParent(self)
         handle.setMouseTracking(True)
         handle.installEventFilter(self)
@@ -77,7 +77,7 @@ class MultiSlider(QWidget):
         self.handles[name] = handle
 
         if self.expandable and init_size == 0:
-            self.move_zero_mark()
+            self.moveZeroMark()
 
     def renameHandle(self, old_name, new_name):
         self.handles[old_name].setText(new_name)
@@ -128,8 +128,6 @@ class MultiSlider(QWidget):
             else:
                 h.setSide(False)
                 
-        # self.check_expansion(handlesort)
-
         self.updateValues.emit(update)            
             
     def getValues(self):
@@ -139,7 +137,7 @@ class MultiSlider(QWidget):
         for h in update:
             self.handles[h].setValue(update[h])
             
-    def check_expansion(self, handles_sorted=None):
+    def checkExpansion(self, handles_sorted=None):
         if not self.expandable:
             return
 
@@ -154,7 +152,7 @@ class MultiSlider(QWidget):
         new_min = self.curr_min
         new_max = self.curr_max
 
-        hrange = self.calc_range()
+        hrange = self.calcRange()
 
         if lowest <= hrange[0]:
             new_min -= 1
@@ -170,13 +168,13 @@ class MultiSlider(QWidget):
         new_max = max(1, new_max)
 
         if new_min != self.curr_min or new_max != self.curr_max:
-            self.update_range(new_min, new_max)
+            self.updateRange(new_min, new_max)
 
-    def update_range(self, new_min, new_max):
+    def updateRange(self, new_min, new_max):
         self.curr_min = new_min
         self.curr_max = new_max
 
-        hrange = self.calc_range()
+        hrange = self.calcRange()
 
         for h in self.handles.values():
             h.setMinimum(hrange[0])
@@ -184,9 +182,9 @@ class MultiSlider(QWidget):
             h.moveText(h.value())
 
         if self.expandable and len(self.handles) > 0:
-            self.move_zero_mark()
+            self.moveZeroMark()
 
-    def move_zero_mark(self):
+    def moveZeroMark(self):
         first_h = self.handles[list(self.handles.keys())[0]]
         self.zero_mark.move(QPoint(self.zero_mark.width(), first_h.valueToY(0) - self.zero_mark.height() // 2))
     
@@ -198,7 +196,7 @@ class MultiSlider(QWidget):
         elif event.type() == QEvent.Type.MouseButtonRelease and self.expandable and \
             not (event.buttons() & Qt.MouseButton.LeftButton):
             if any([self.handles[h].isSliderDown() for h in self.handles]):
-                self.check_expansion()
+                self.checkExpansion()
 
         return QWidget.eventFilter(self, source, event)
 

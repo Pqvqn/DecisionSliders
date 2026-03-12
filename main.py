@@ -138,6 +138,9 @@ class CriterionConfig(QDialog):
     def __init__(self, criterion):
         super().__init__()
 
+        MIN = "◡"
+        MAX = "◠"
+
         self.criterion = criterion
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -153,8 +156,8 @@ class CriterionConfig(QDialog):
 
         self.rangeSlider = MultiSlider(150, 250)
         self.rangeSlider.setExpandable(True)
-        self.rangeSlider.addHandles(["min", "max"])
-        self.rangeSlider.setValues({"min": -25, "max": 25})
+        self.rangeSlider.addHandles([MIN, MAX])
+        self.rangeSlider.setValues({MIN: -25, MAX: 25})
         sublayout.addWidget(self.rangeSlider)
 
         self.confirmButton = QPushButton("🞠🞠🞠")
