@@ -90,6 +90,8 @@ class Criterion(QWidget):
 
         self.influences = set()
         self.receives = set()
+        self.rmin = self.mslider.curr_min * self.mslider.step
+        self.rmax = self.mslider.curr_max * self.mslider.step
 
         self.configButton.pressed.connect(self.openConfig)
 
@@ -111,17 +113,23 @@ class Criterion(QWidget):
         for r in self.receives:
             r.recalc()
 
-    def recalc(self):        
+    def recalc(self):
+        amin = self.mslider.curr_min * self.mslider.step
+        amax = self.mslider.curr_max * self.mslider.step
         sum_dict = {n: 0 for n in self.getValues()}
         for i in self.influences:
             o_vals = i.getValues()
             for n in o_vals:
                 sum_dict[n] += o_vals[n]
         for n in sum_dict:
-            sum_dict[n] //= len(self.influences)
+            sum_dict[n] -= self.rmin
+            sum_dict[n] /= (self.rmax - self.rmin)
+            sum_dict[n] *= (amax - amin)
+            sum_dict[n] += amin
+            sum_dict[n] = int(sum_dict[n])
         self.setValues(sum_dict)
 
-    def updateInfluences(self, new_influences):
+    def updateInfluences(self, new_influences, recalc=True):
         self.mslider.setReadOnly(len(new_influences) > 0)
         
         for to_connect in new_influences - self.influences:
@@ -130,16 +138,26 @@ class Criterion(QWidget):
             to_disconnect.receives.remove(self)
         self.influences = new_influences
 
-        if len(self.influences) > 0:
-            self.recalc()
+        if recalc:
+            if len(self.influences) > 0:
+                self.recalc()
+
+    def updateRange(self, new_min, new_max, recalc=True):
+
+        self.rmin = new_min
+        self.rmax = new_max
+        
+        if recalc:
+            if len(self.influences) > 0:
+                self.recalc()
         
 
 class CriterionConfig(QDialog):
     def __init__(self, criterion):
         super().__init__()
 
-        MIN = "◡"
-        MAX = "◠"
+        self.MIN = "◡"
+        self.MAX = "◠"
 
         self.criterion = criterion
         layout = QVBoxLayout()
@@ -150,14 +168,14 @@ class CriterionConfig(QDialog):
         self.influenceChecks = QVBoxLayout()
         sublayout.addLayout(self.influenceChecks)
 
-        self.previewSlider = MultiSlider(150, 250)
-        self.previewSlider.setReadOnly(True)
-        sublayout.addWidget(self.previewSlider)
+        #self.previewSlider = MultiSlider(150, 250)
+        #self.previewSlider.setReadOnly(True)
+        #sublayout.addWidget(self.previewSlider)
 
         self.rangeSlider = MultiSlider(150, 250)
         self.rangeSlider.setExpandable(True)
-        self.rangeSlider.addHandles([MIN, MAX])
-        self.rangeSlider.setValues({MIN: -25, MAX: 25})
+        self.rangeSlider.addHandles([self.MIN, self.MAX])
+        self.rangeSlider.setValues({self.MIN: self.criterion.rmin, self.MAX: self.criterion.rmax})
         sublayout.addWidget(self.rangeSlider)
 
         self.confirmButton = QPushButton("🞠🞠🞠")
@@ -188,7 +206,10 @@ class CriterionConfig(QDialog):
 
     def confirmChanges(self):
         new_influences = {self.checkboxes[cb] for cb in self.checkboxes if cb.isChecked()}
-        self.criterion.updateInfluences(new_influences)
+        self.criterion.updateInfluences(new_influences, recalc=False)
+        rangevals = self.rangeSlider.getValues()
+        self.criterion.updateRange(rangevals[self.MIN], rangevals[self.MAX], recalc=False)
+        self.criterion.recalc()
         self.done(QDialog.DialogCode.Accepted)
 
     def findDownstream(self, me):
