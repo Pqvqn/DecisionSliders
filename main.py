@@ -1,6 +1,6 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton, QDialog, QFormLayout, QLabel, QCheckBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton, QDialog, QFormLayout, QLabel, QCheckBox, QButtonGroup, QRadioButton, QGroupBox
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize, Qt
 from PyQt6.QtGui import QPalette, QColor
 
@@ -198,7 +198,48 @@ class CriterionConfig(QDialog):
             
             self.checkboxes[cb] = crit
             self.influenceChecks.addWidget(cb)
-                
+
+        rangeOptions = {
+            "center": {
+                "◂◬▸": "manual",
+                " ◬ ": "lock",
+                "-◬-": "zero",
+                "▪◬▪": "mean",
+                "◭◬◮": "range"
+            },
+            "range": {
+                "◂◭ ◮▸": "manual",
+                " ◭ ◮ ": "lock",
+                "◭---◮": "one",
+                "▪◭▪◮▪": "stdev",
+                "◭▪▪▪◮": "minmax",
+                "◭▫▪▫◮": "possible",
+            },
+            "invert": {
+                "◭◮": "default",
+                "◮◭": "invert" 
+            }
+        }
+
+        rangeGroups = {}
+
+        for optionSet in rangeOptions:
+            group, box = self.makeButtonGroup(rangeOptions[optionSet])
+            rangeGroups[optionSet] = group
+            sublayout.addWidget(box)
+
+        
+        
+    def makeButtonGroup(self, options):
+        group = QButtonGroup()
+        box = QGroupBox()
+        layout = QVBoxLayout()
+        for opt in options:
+            radio = QRadioButton(opt)
+            group.addButton(radio)
+            layout.addWidget(radio)
+        box.setLayout(layout)
+        return group, box
 
     def makeInfluenceCheck(self, crit):
         check = QCheckBox(crit.rname)
