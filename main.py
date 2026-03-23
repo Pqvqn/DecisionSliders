@@ -1,6 +1,6 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton, QDialog, QFormLayout, QLabel, QCheckBox, QButtonGroup, QRadioButton, QGroupBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton, QDialog, QFormLayout, QLabel, QCheckBox, QButtonGroup, QRadioButton, QGroupBox, QGridLayout
 from PyQt6.QtCore import pyqtSignal, pyqtSlot, QSize, Qt
 from PyQt6.QtGui import QPalette, QColor
 
@@ -199,47 +199,66 @@ class CriterionConfig(QDialog):
             self.checkboxes[cb] = crit
             self.influenceChecks.addWidget(cb)
 
-        rangeOptions = {
+        rangeGroupLabels = {
+            "◬": "center",
+            "◿◺": "range",
+            "◮": "invert"
+        }
+        rangeOptionLabels = {
             "center": {
-                "◂◬▸": "manual",
-                " ◬ ": "lock",
-                "-◬-": "zero",
-                "▪◬▪": "mean",
-                "◭◬◮": "range"
+                "\n".join("▴-▾"): "manual",
+                "\n".join(" - "): "lock",
+                "\n".join("|-|"): "zero",
+                "\n".join("▪-▪"): "mean",
+                "\n".join("▫-▫"): "range"
             },
             "range": {
-                "◂◭ ◮▸": "manual",
-                " ◭ ◮ ": "lock",
-                "◭---◮": "one",
-                "▪◭▪◮▪": "stdev",
-                "◭▪▪▪◮": "minmax",
-                "◭▫▪▫◮": "possible",
+                "\n".join("▴◠◡▾"): "manual",
+                "\n".join(" ◠◡ "): "lock",
+                "\n".join("◠||◡"): "one",
+                "\n".join("▪◠◡▪"): "stdev",
+                "\n".join("◠▪▪◡"): "minmax",
+                "\n".join("◠▫▫◡"): "possible"
             },
             "invert": {
-                "◭◮": "default",
-                "◮◭": "invert" 
+                "\n".join("◠◡"): "default",
+                "\n".join("◡◠"): "invert" 
             }
+        }
+        rangeDefaultOption = {
+            "center": "zero",
+            "range": "one",
+            "invert": "default"
         }
 
         rangeGroups = {}
+        rangeOptions = {}
 
-        for optionSet in rangeOptions:
-            group, box = self.makeButtonGroup(rangeOptions[optionSet])
-            rangeGroups[optionSet] = group
-            sublayout.addWidget(box)
-
+        optionsLayout = QVBoxLayout()
         
+        for optionSet in rangeGroupLabels:
+            key = rangeGroupLabels[optionSet]
+            group, box, options = self.makeButtonGroup(optionSet, rangeOptionLabels[key], rangeDefaultOption[key])
+            rangeGroups[key] = group
+            rangeOptions[key] = options
+            optionsLayout.addWidget(box)
+        sublayout.addLayout(optionsLayout)
         
-    def makeButtonGroup(self, options):
+    def makeButtonGroup(self, groupLabel, optionLabels, defaultOption):
         group = QButtonGroup()
-        box = QGroupBox()
-        layout = QVBoxLayout()
-        for opt in options:
-            radio = QRadioButton(opt)
+        box = QGroupBox(groupLabel)
+        layout = QGridLayout()
+        options = {}
+        for i, opt in enumerate(optionLabels):
+            radio = QRadioButton()
+            if optionLabels[opt] == defaultOption:
+                radio.setChecked(True)
             group.addButton(radio)
-            layout.addWidget(radio)
+            layout.addWidget(radio, 0, i, 1, 1)
+            layout.addWidget(QLabel(opt), 1, i, 1, 1)
+            options[radio] = opt
         box.setLayout(layout)
-        return group, box
+        return group, box, options
 
     def makeInfluenceCheck(self, crit):
         check = QCheckBox(crit.rname)
